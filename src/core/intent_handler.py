@@ -4,6 +4,8 @@ from src.voice.text_to_speech import speak
 from src.apps.app_manager import open_app
 from src.apps.app_manager import close_app
 from src.apps.running_apps import get_running_apps
+from src.file_search.search_engine import find_files
+
 
 
 def handle_command(command):
@@ -95,6 +97,24 @@ def handle_command(command):
         speak(
             f"I found {len(apps)} running applications"
         )
+
+        return
+    
+    elif command.startswith("find "):
+
+        keyword = command.replace(
+            "find ",
+            ""
+        ).strip()
+
+        speak(f"Searching for {keyword}")
+
+        results = find_files(keyword)
+
+        for file in results[:20]:
+            print(file)
+
+        speak(f"I found {len(results)} matching files")
 
         return
 
