@@ -9,9 +9,22 @@ def listen():
 
         print("\nListening...")
 
-        recognizer.adjust_for_ambient_noise(source, duration=1)
+        recognizer.adjust_for_ambient_noise(
+            source,
+            duration=0.2
+        )
 
-        audio = recognizer.listen(source)
+        try:
+
+            audio = recognizer.listen(
+                source,
+                timeout=5,
+                phrase_time_limit=5
+            )
+
+        except sr.WaitTimeoutError:
+
+            return None
 
     try:
 
@@ -21,10 +34,12 @@ def listen():
 
     except sr.UnknownValueError:
 
+        print("Could not understand audio")
+
         return None
 
     except sr.RequestError:
 
-        print("Internet connection required.")
+        print("Internet connection error")
 
         return None

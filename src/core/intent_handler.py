@@ -1,43 +1,103 @@
-# src/core/intent_handler.py
-
 import subprocess
 from datetime import datetime
+from src.voice.text_to_speech import speak
+from src.apps.app_manager import open_app
+from src.apps.app_manager import close_app
+from src.apps.running_apps import get_running_apps
 
 
 def handle_command(command):
 
-    command = command.lower()
+    command = command.lower().strip()
 
-    if "open notepad" in command:
+    print("COMMAND:", command)
 
-        print("Opening Notepad...")
-
-        subprocess.Popen("notepad.exe")
-
-        return
-
-    if "open calculator" in command:
-
-        print("Opening Calculator...")
-
-        subprocess.Popen("calc.exe")
-
-        return
-
-    if "what time is it" in command:
+    if "time" in command:
 
         current_time = datetime.now().strftime("%I:%M %p")
 
-        print(f"Current Time: {current_time}")
+        speak(f"The current time is {current_time}")
 
         return
-    
-    if "what is today's date" in command:
+
+    elif "date" in command:
 
         today = datetime.now().strftime("%d %B %Y")
 
-        print(f"Today's Date: {today}")
+        speak(f"Today is {today}")
 
         return
 
-    print("Command not recognized.")
+    elif "hello" in command:
+
+        speak("Hello Ashish")
+
+        return
+
+    elif "who are you" in command:
+
+        speak("I am Aura AI, your personal desktop assistant")
+
+        return
+
+    elif command == "exit":
+
+        speak("Goodbye")
+
+        exit()
+
+    elif command.startswith("open "):
+
+        app_name = command.replace(
+            "open ",
+            ""
+        ).strip()
+
+        speak(f"Opening {app_name}")
+
+        success = open_app(app_name)
+
+        if not success:
+
+            speak("Application not found")
+
+        return
+
+    elif command.startswith("close "):
+
+        app_name = command.replace(
+            "close ",
+            ""
+        ).strip()
+
+        success = close_app(app_name)
+
+        if success:
+
+            speak(f"Closing {app_name}")
+
+        else:
+
+            speak("Application not found")
+
+        return
+
+    elif "what apps are running" in command:
+
+        apps = get_running_apps()
+
+        print("\nRunning Apps:\n")
+
+        for app in apps[:20]:
+
+            print(app)
+
+        speak(
+            f"I found {len(apps)} running applications"
+        )
+
+        return
+
+    else:
+
+        speak("Command not recognized")
