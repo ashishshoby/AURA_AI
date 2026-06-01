@@ -1,6 +1,8 @@
 import os
 import re
 from datetime import datetime
+
+from click import command
 from src.voice.text_to_speech import speak
 from src.apps.app_manager import open_app
 from src.apps.app_manager import close_app
@@ -9,7 +11,11 @@ from src.file_search.search_engine import search_files, search_by_topic
 from src.file_search.search_memory import store_results
 from src.file_search.search_memory import get_result
 from src.brain.brain import ask_brain
-
+from src.system.system_info import get_battery_status
+from src.system.system_info import get_cpu_usage
+from src.system.system_info import get_ram_usage
+from src.system.system_info import get_disk_space
+from src.system.system_info import get_wifi_status
 CHAT_MODE = False
 
 def handle_command(command):
@@ -177,7 +183,56 @@ def handle_command(command):
 
         return True
 
-    # --- File Search ---
+
+    # --- Battery Status ---
+
+    if "battery" in command:
+
+        response = get_battery_status()
+
+        speak(response)
+
+        return True
+    # --- CPU Usage ---
+
+    if "cpu" in command:
+
+        response = get_cpu_usage()
+
+        speak(response)
+
+        return True
+    
+    # --- RAM Usage ---
+
+    if "ram" in command or "memory usage" in command:
+
+        response = get_ram_usage()
+
+        speak(response)
+
+        return True
+    
+    # --- Disk Space ---
+
+    if "disk space" in command:
+
+        response = get_disk_space()
+
+        speak(response)
+
+        return True
+    
+    # --- WiFi Status ---
+
+    if "wifi" in command or "internet" in command:
+
+        response = get_wifi_status()
+
+        speak(response)
+
+        return True
+# --- File Search ---
 
     if command.startswith(("find ", "search for ", "search ")):
         
