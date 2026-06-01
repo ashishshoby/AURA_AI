@@ -16,6 +16,12 @@ from src.system.system_info import get_cpu_usage
 from src.system.system_info import get_ram_usage
 from src.system.system_info import get_disk_space
 from src.system.system_info import get_wifi_status
+from src.system.volume_control import volume_up
+from src.system.volume_control import volume_down
+from src.system.volume_control import mute
+from src.system.volume_control import unmute
+from src.system.volume_control import set_volume
+import re
 CHAT_MODE = False
 
 def handle_command(command):
@@ -232,15 +238,85 @@ def handle_command(command):
         speak(response)
 
         return True
-# --- File Search ---
+    
+    # --- Volume Controls ---
+
+    if command in (
+    "volume up",
+    "increase volume",
+    "increase sound",
+    "sound up"
+):
+
+     speak(volume_up())
+
+     return True
+
+
+    if command in (
+    "volume down",
+    "decrease volume",
+    "lower volume",
+    "sound down"
+):
+
+        speak(volume_down())
+
+        return True
+
+
+    if command in (
+    "mute",
+    "mute volume",
+    "mute audio"
+):
+
+     speak(mute())
+
+     return True
+
+
+    if command in (
+    "unmute",
+    "unmute volume",
+    "unmute audio"
+):
+
+        speak(unmute())
+
+        return True
+
+
+    if "volume" in command:
+
+        match = re.search(r"(\d+)", command)
+
+        if match:
+
+            percent = int(match.group(1))
+
+            if 0 <= percent <= 100:
+
+                speak(set_volume(percent))
+
+                return True
+
+        else:
+
+            speak(
+                "Please specify a volume level between 0 and 100."
+            )
+
+            return True
+    # --- File Search ---
 
     if command.startswith(("find ", "search for ", "search ")):
-        
+
         # Topic search
         if "documents" in command or "related to" in command or "about" in command or "containing" in command:
             results = search_by_topic(command)
             speak(f"Searching for documents related to {command.split('about')[-1].strip()}")
-        
+
         # Simple file search
         else:
             keyword = re.sub(r"^(find|search for|search)\s+", "", command).strip()
