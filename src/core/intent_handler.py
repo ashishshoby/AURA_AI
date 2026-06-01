@@ -22,6 +22,7 @@ from src.system.volume_control import mute
 from src.system.volume_control import unmute
 from src.system.volume_control import set_volume
 import re
+from src.system.screenshot import take_screenshot
 CHAT_MODE = False
 
 def handle_command(command):
@@ -308,6 +309,20 @@ def handle_command(command):
             )
 
             return True
+        
+        # --- Screenshot ---
+
+    if command in (
+    "take screenshot",
+    "capture screen",
+    "screenshot"
+   ):
+
+        filepath = take_screenshot()
+        speak(filepath)
+        print("SCREENSHOT PATH:", filepath)
+
+        return True
     # --- File Search ---
 
     if command.startswith(("find ", "search for ", "search ")):
