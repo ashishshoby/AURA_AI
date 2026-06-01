@@ -12,7 +12,7 @@ INDEX_FILE = os.path.abspath(os.path.join(
 ))
 
 IGNORE_FOLDERS = {
-    "$RECYCLE.BIN",
+    "$Recycle.Bin",
     "System Volume Information",
     "Windows",
     "Program Files",
@@ -24,24 +24,26 @@ IGNORE_FOLDERS = {
     ".venv",
     "node_modules",
     "WinSxS",
-    "AppData"
+    "AppData",
+    ".vscode",
+    ".codex",
+    "site-packages",
+    "Packages",
+    "Temp",
+    "Cache"
+    "OneDriveTemp",
+    ".tmp",
 }
 
 SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".pptx", ".txt", ".html", ".doc"}
 
 def get_drives():
 
-    drives = []
-
-    for letter in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
-
-        drive = f"{letter}:\\"
-
-        if os.path.exists(drive):
-
-            drives.append(drive)
-
-    return drives
+    return [
+        os.path.expanduser("~/Documents"),
+        os.path.expanduser("~/Desktop"),
+        os.path.expanduser("~/Downloads")
+    ]
 
 
 def build_index():
@@ -50,14 +52,35 @@ def build_index():
 
     total_files = 0
 
-    for drive in get_drives():
+    for folder in get_drives():
+        if not os.path.exists(folder):
+            continue
 
-        print(f"Scanning {drive}")
+        print(f"Scanning {folder}")
 
-        for root, dirs, filenames in os.walk(drive):
+        for root, dirs, filenames in os.walk(folder):
 
             # Filtering directories
-            dirs[:] = [d for d in dirs if d not in IGNORE_FOLDERS and not d.startswith('.')]
+            dirs[:] = [
+                d for d in dirs
+                if d not in IGNORE_FOLDERS
+                and not d.startswith('.')
+            ]
+
+            if "$Recycle.Bin" in root:
+                continue
+
+            if "AppData" in root:
+                continue
+
+            if ".vscode" in root:
+                continue
+
+            if ".codex" in root:
+                continue
+
+            if "site-packages" in root:
+                continue
 
             try:
                 for filename in filenames:

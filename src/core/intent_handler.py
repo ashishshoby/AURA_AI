@@ -10,9 +10,11 @@ from src.file_search.search_memory import store_results
 from src.file_search.search_memory import get_result
 from src.brain.brain import ask_brain
 
-
+CHAT_MODE = False
 
 def handle_command(command):
+
+    global CHAT_MODE
 
     command = command.lower().strip()
 
@@ -62,6 +64,27 @@ def handle_command(command):
 
         return True
 
+    # --- Chat Mode ---
+
+    if command == "start chat mode":
+
+        CHAT_MODE = True
+
+        speak("Chat mode enabled")
+
+        return True
+
+    if command == "stop chat mode":
+
+        CHAT_MODE = False
+
+        from src.brain.chat import clear_chat
+
+        clear_chat()
+
+        speak("Chat mode disabled")
+
+        return True
     # --- Open Application ---
 
     if command.startswith(("open ", "launch ", "start ")):
@@ -181,12 +204,25 @@ def handle_command(command):
             speak("No matching files found")
 
         return True
+    # --- Continuous Chat Mode ---
+
+    if CHAT_MODE:
+
+        from src.brain.chat import chat
+
+        response = chat(command)
+
+        speak(response)
+
+        return True
 
     # --- Ollama Brain (questions / unknown commands) ---
 
+    from src.brain.chat import chat
+
     speak("Let me think about that")
 
-    response = ask_brain(command)
+    response = chat(command)
 
     speak(response)
 
