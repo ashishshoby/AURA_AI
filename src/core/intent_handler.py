@@ -1,10 +1,14 @@
-import subprocess
+import os
+import re
 from datetime import datetime
 from src.voice.text_to_speech import speak
 from src.apps.app_manager import open_app
 from src.apps.app_manager import close_app
 from src.apps.running_apps import get_running_apps
-from src.file_search.search_engine import find_files
+from src.file_search.search_engine import search_files, search_by_topic
+from src.file_search.search_memory import store_results
+from src.file_search.search_memory import get_result
+from src.brain.brain import ask_brain
 
 
 
@@ -14,45 +18,91 @@ def handle_command(command):
 
     print("COMMAND:", command)
 
-    if "time" in command:
+    # --- Greetings ---
 
-        current_time = datetime.now().strftime("%I:%M %p")
-
-        speak(f"The current time is {current_time}")
-
-        return
-
-    elif "date" in command:
-
-        today = datetime.now().strftime("%d %B %Y")
-
-        speak(f"Today is {today}")
-
-        return
-
-    elif "hello" in command:
+    if command in ("hello", "hi", "hey"):
 
         speak("Hello Ashish")
 
-        return
+        return True
 
-    elif "who are you" in command:
+    # --- Identity ---
+
+    if "who are you" in command:
 
         speak("I am Aura AI, your personal desktop assistant")
 
-        return
+        return True
 
-    elif command == "exit":
+    # --- Exit ---
+
+    if command == "exit":
 
         speak("Goodbye")
 
         exit()
 
-    elif command.startswith("open "):
+    # --- Time ---
 
-        app_name = command.replace(
-            "open ",
-            ""
+    if "time" in command and "what" in command:
+
+        current_time = datetime.now().strftime("%I:%M %p")
+
+        speak(f"The current time is {current_time}")
+
+        return True
+
+    # --- Date ---
+
+    if "date" in command:
+
+        today = datetime.now().strftime("%d %B %Y")
+
+        speak(f"Today is {today}")
+
+        return True
+
+    # --- Open Application ---
+
+    if command.startswith(("open ", "launch ", "start ")):
+
+        # Check for "open result N" first
+        result_match = re.match(
+            r"open result (\d+)",
+            command
+        )
+
+        if result_match:
+
+            index = int(result_match.group(1))
+
+            result = get_result(index)
+
+            if result is None:
+
+                speak("No search results available")
+
+                return True
+
+            path = result["path"]
+
+            if os.path.exists(path):
+
+                speak(f"Opening {result['name']}")
+
+                os.startfile(path)
+
+            else:
+
+                speak("That file no longer exists")
+
+            return True
+
+        # Regular app open
+        app_name = re.sub(
+            r"^(open|launch|start)\s+",
+            "",
+            command
         ).strip()
 
         speak(f"Opening {app_name}")
@@ -63,9 +113,11 @@ def handle_command(command):
 
             speak("Application not found")
 
-        return
+        return True
 
-    elif command.startswith("close "):
+    # --- Close Application ---
+
+    if command.startswith("close "):
 
         app_name = command.replace(
             "close ",
@@ -82,9 +134,11 @@ def handle_command(command):
 
             speak("Application not found")
 
-        return
+        return True
 
-    elif "what apps are running" in command:
+    # --- Running Apps ---
+
+    if "what apps are running" in command:
 
         apps = get_running_apps()
 
@@ -98,26 +152,42 @@ def handle_command(command):
             f"I found {len(apps)} running applications"
         )
 
-        return
-    
-    elif command.startswith("find "):
+        return True
 
-        keyword = command.replace(
-            "find ",
-            ""
-        ).strip()
+    # --- File Search ---
 
-        speak(f"Searching for {keyword}")
+    if command.startswith(("find ", "search for ", "search ")):
+        
+        # Topic search
+        if "documents" in command or "related to" in command or "about" in command or "containing" in command:
+            results = search_by_topic(command)
+            speak(f"Searching for documents related to {command.split('about')[-1].strip()}")
+        
+        # Simple file search
+        else:
+            keyword = re.sub(r"^(find|search for|search)\s+", "", command).strip()
+            results = search_files(keyword)
+            speak(f"Searching for {keyword}")
 
-        results = find_files(keyword)
+        store_results(results)
 
-        for file in results[:20]:
-            print(file)
+        if results:
+            print(f"\nSearch Results ({len(results)} found):\n")
+            for i, file in enumerate(results[:20], 1):
+                print(f"  {i}. {file['name']}")
+                print(f"     {file['path']}")
+            speak(f"I found {len(results)} matching files")
+        else:
+            speak("No matching files found")
 
-        speak(f"I found {len(results)} matching files")
+        return True
 
-        return
+    # --- Ollama Brain (questions / unknown commands) ---
 
-    else:
+    speak("Let me think about that")
 
-        speak("Command not recognized")
+    response = ask_brain(command)
+
+    speak(response)
+
+    return True

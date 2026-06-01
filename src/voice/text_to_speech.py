@@ -1,6 +1,5 @@
 import pyttsx3
 
-
 def speak(text):
 
     print(f"AURA: {text}")
@@ -9,13 +8,23 @@ def speak(text):
 
         engine = pyttsx3.init()
 
-        voices = engine.getProperty('voices')
+        voices = engine.getProperty("voices")
 
-        engine.setProperty('voice', voices[1].id)
+        if len(voices) > 1:
+            engine.setProperty(
+                "voice",
+                voices[1].id
+            )
 
-        engine.setProperty('rate', 180)
+        engine.setProperty(
+            "rate",
+            180
+        )
 
-        engine.setProperty('volume', 1.0)
+        engine.setProperty(
+            "volume",
+            1.0
+        )
 
         engine.say(str(text))
 
@@ -25,4 +34,7 @@ def speak(text):
 
     except Exception as e:
 
-        print("TTS Error:", e)
+        print(
+            "TTS Error:",
+            e
+        )

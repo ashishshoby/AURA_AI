@@ -1,6 +1,6 @@
 import os
 import sys
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -8,7 +8,7 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 from src.core import intent_handler
-from src.file_search.search_memory import LAST_RESULTS
+from src.file_search import search_memory
 
 
 COMMANDS = [
@@ -27,24 +27,26 @@ COMMANDS = [
 ]
 
 
-def _fake_search_files(query):
-    if query == "pdf":
+def _fake_search_files(query, max_results=50):
+    if "pdf" in query:
         return [
             {
                 "name": "sample.pdf",
                 "path": r"C:\AURA\Validation\sample.pdf",
                 "extension": ".pdf",
                 "modified": "2026-05-31 00:00:00",
+                "score": 100,
             }
         ]
 
-    if query == "assuregate":
+    if "assuregate" in query:
         return [
             {
                 "name": "AssureGate Documentation.pdf",
                 "path": r"C:\AURA\Validation\AssureGate Documentation.pdf",
                 "extension": ".pdf",
                 "modified": "2026-05-31 00:00:00",
+                "score": 100,
             }
         ]
 
@@ -56,13 +58,18 @@ def run_validation():
     opened_paths = []
     ai_calls = []
 
-    def fake_chat(command):
-        ai_calls.append(("fast", command))
-        return "AI response."
+    def fake_speak(text):
+        spoken.append(str(text))
 
-    def fake_ask_brain(command):
-        ai_calls.append(("heavy", command))
-        return "Summary response."
+    def fake_open_app(app):
+        return app in {"chrome", "telegram"}
+
+    def fake_close_app(app):
+        return app in {"chrome", "telegram"}
+
+    def fake_ask_brain(prompt):
+        ai_calls.append(prompt)
+        return "AI response."
 
     def fake_startfile(path):
         opened_paths.append(path)
@@ -74,39 +81,71 @@ def run_validation():
         }
 
     patches = [
-        patch.object(intent_handler, "speak", lambda text: spoken.append(str(text))),
-        patch.object(intent_handler, "open_app", lambda app: app in {"chrome", "telegram"}),
-        patch.object(intent_handler, "close_app", lambda app: app in {"chrome", "telegram"}),
+        patch.object(intent_handler, "speak", fake_speak),
+        patch.object(intent_handler, "open_app", fake_open_app),
+        patch.object(intent_handler, "close_app", fake_close_app),
         patch.object(intent_handler, "search_files", _fake_search_files),
-        patch.object(intent_handler, "chat", fake_chat),
         patch.object(intent_handler, "ask_brain", fake_ask_brain),
         patch.object(intent_handler.os, "startfile", fake_startfile, create=True),
         patch.object(intent_handler.os.path, "exists", fake_exists),
     ]
 
-    LAST_RESULTS.clear()
+    search_memory.LAST_RESULTS.clear()
     results = []
 
-    with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6], patches[7]:
+    with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6]:
         for command in COMMANDS:
             before_speech = len(spoken)
             before_ai = len(ai_calls)
+            before_opened = len(opened_paths)
+
             passed = bool(intent_handler.handle_command(command))
             spoke = len(spoken) > before_speech
 
-            if command.startswith(("open ", "close ", "find ")) and command != "open result 1":
-                ai_ok = len(ai_calls) == before_ai
-            elif command == "open result 1":
-                ai_ok = len(ai_calls) == before_ai and opened_paths
-            else:
-                ai_ok = True
+            # Commands should NOT call Ollama
+            if command.startswith(("open ", "close ", "find ")):
+                if command == "open result 1":
+                    ai_ok = len(ai_calls) == before_ai
+                    file_ok = len(opened_paths) > before_opened
+                    results.append((command, passed and spoke and ai_ok and file_ok))
+                else:
+                    ai_ok = len(ai_calls) == before_ai
+                    results.append((command, passed and spoke and ai_ok))
 
-            results.append((command, passed and spoke and ai_ok))
+            # Simple commands (hello, time) should NOT call Ollama
+            elif command in ("hello",) or "time" in command:
+                ai_ok = len(ai_calls) == before_ai
+                results.append((command, passed and spoke and ai_ok))
+
+            # Questions SHOULD call Ollama
+            else:
+                ai_ok = len(ai_calls) > before_ai
+                results.append((command, passed and spoke and ai_ok))
 
     return results
 
 
 if __name__ == "__main__":
-    for command, passed in run_validation():
+    print("=" * 50)
+    print("AURA AI — Validation Suite")
+    print("=" * 50)
+    print()
+
+    all_results = run_validation()
+    pass_count = sum(1 for _, p in all_results if p)
+    fail_count = len(all_results) - pass_count
+
+    for command, passed in all_results:
         status = "PASS" if passed else "FAIL"
-        print(f"{status}: {command}")
+        icon = "[+]" if passed else "[-]"
+        print(f"  {icon} {status}: {command}")
+
+    print()
+    print(f"Results: {pass_count}/{len(all_results)} passed")
+
+    if fail_count:
+        print(f"         {fail_count} FAILED")
+    else:
+        print("         All tests passed!")
+
+    print("=" * 50)

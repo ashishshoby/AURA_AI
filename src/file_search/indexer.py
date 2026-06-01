@@ -1,8 +1,15 @@
 import os
 import json
 from datetime import datetime
+from src.file_search.document_parser import extract_text
 
-INDEX_FILE = "data/file_index.json"
+INDEX_FILE = os.path.abspath(os.path.join(
+    os.path.dirname(__file__),
+    "..",
+    "..",
+    "data",
+    "file_index.json"
+))
 
 IGNORE_FOLDERS = {
     "$RECYCLE.BIN",
@@ -20,6 +27,7 @@ IGNORE_FOLDERS = {
     "AppData"
 }
 
+SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".pptx", ".txt", ".html", ".doc"}
 
 def get_drives():
 
@@ -48,75 +56,45 @@ def build_index():
 
         for root, dirs, filenames in os.walk(drive):
 
-            root_lower = root.lower()
-
-            if (
-                "$recycle.bin" in root_lower
-                or "system volume information" in root_lower
-                or "\\windows" in root_lower
-                or "\\program files" in root_lower
-                or "\\programdata" in root_lower
-                or "\\appdata" in root_lower
-                or "node_modules" in root_lower
-                or "\\winsxs" in root_lower
-                or "\\venv" in root_lower
-                or "\\.venv" in root_lower
-            ):
-                continue
-
-            dirs[:] = [
-                d for d in dirs
-                if d not in IGNORE_FOLDERS
-            ]
+            # Filtering directories
+            dirs[:] = [d for d in dirs if d not in IGNORE_FOLDERS and not d.startswith('.')]
 
             try:
-
                 for filename in filenames:
+                    extension = os.path.splitext(filename)[1].lower()
+                    if extension not in SUPPORTED_EXTENSIONS:
+                        continue
 
-                    full_path = os.path.join(
-                        root,
-                        filename
-                    )
+                    full_path = os.path.join(root, filename)
 
                     try:
-
                         stat = os.stat(full_path)
+                        text_content = extract_text(full_path)
 
                         files.append({
                             "name": filename,
                             "path": full_path,
-                            "extension": os.path.splitext(filename)[1].lower(),
+                            "extension": extension,
                             "size": stat.st_size,
-                            "modified": datetime.fromtimestamp(
-                                stat.st_mtime
-                            ).strftime("%Y-%m-%d %H:%M:%S")
+                            "modified": datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
+                            "content": text_content,
+                            "keywords": [],  # Placeholder for future keyword extraction
+                            "summary_cache": None  # Placeholder for summary cache
                         })
 
                         total_files += 1
+                        if total_files % 100 == 0:
+                            print(f"Indexed {total_files} files...")
 
-                    except:
-                        pass
+                    except Exception as e:
+                        print(f"Could not process file {full_path}: {e}")
 
-            except:
-                pass
+            except Exception as e:
+                print(f"Error walking directory {root}: {e}")
 
-    os.makedirs(
-        "data",
-        exist_ok=True
-    )
+    os.makedirs(os.path.dirname(INDEX_FILE), exist_ok=True)
 
-    with open(
-        INDEX_FILE,
-        "w",
-        encoding="utf-8"
-    ) as f:
+    with open(INDEX_FILE, "w", encoding="utf-8") as f:
+        json.dump(files, f, indent=4)
 
-        json.dump(
-            files,
-            f,
-            indent=4
-        )
-
-    print(
-        f"\nIndexed {total_files} files successfully"
-    )
+    print(f"\nIndexed {total_files} files successfully")

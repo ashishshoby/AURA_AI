@@ -25,10 +25,9 @@ PROCESS_ALIASES = {
     "code": "code.exe",
     "visual studio code": "code.exe",
 
-    "telegram": "telegram.exe",
-    "telegram web": "telegram.exe",
+    "telegram": "Telegram Desktop.exe",
+    "telegram web": "Telegram Desktop.exe",
     "telegram desktop": "Telegram Desktop.exe",
-    "telegram": "telegram Desktop.exe",    
 
     "vlc": "vlc.exe",
     "vlc media player": "vlc.exe",
