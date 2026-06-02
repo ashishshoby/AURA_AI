@@ -28,6 +28,14 @@ from src.system.process_manager import (
     get_top_ram_processes,
     kill_process
 )
+from src.music.music_controller import (
+    open_spotify,
+    search_song,
+    play_music,
+    pause_music,
+    next_song,
+    previous_song
+)
 CHAT_MODE = False
 
 def handle_command(command):
@@ -423,6 +431,60 @@ def handle_command(command):
             )
 
         return True
+    
+    # --- Music Controls ---
+
+    if command == "open spotify":
+
+        speak(open_spotify())
+
+        return True
+    
+    # --- Spotify Search ---
+
+    if command.startswith("search spotify for "):
+
+        song = command.replace(
+        "search spotify for ",
+        "",
+        1
+    ).strip()
+
+        speak(
+        search_song(song)
+    )
+
+        return True
+
+    # --- Play Music ---
+
+    if command in ("play music", "play song", "play", "play the song","play it"):
+
+        speak(play_music())
+
+        return True
+
+
+    if command in ("pause music", "pause song", "pause", "pause the song","stop the song", "stop music","stop it"):
+
+        speak(pause_music())
+
+        return True
+
+
+    if command in ("next song", "skip song","skip","next"):
+
+        speak(next_song())
+
+        return True
+
+
+    if command in ("previous song", "last song","previous"):
+
+        speak(previous_song())
+
+        return True
+    
     # --- File Search ---
 
     if command.startswith(("find ", "search for ", "search ")):
