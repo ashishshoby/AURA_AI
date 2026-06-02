@@ -23,6 +23,11 @@ from src.system.volume_control import unmute
 from src.system.volume_control import set_volume
 import re
 from src.system.screenshot import take_screenshot
+from src.system.process_manager import (
+    get_top_cpu_processes,
+    get_top_ram_processes,
+    kill_process
+)
 CHAT_MODE = False
 
 def handle_command(command):
@@ -202,7 +207,11 @@ def handle_command(command):
         return True
     # --- CPU Usage ---
 
-    if "cpu" in command:
+    if command in (
+    "cpu usage",
+    "cpu status",
+    "processor usage"
+):
 
         response = get_cpu_usage()
 
@@ -212,7 +221,11 @@ def handle_command(command):
     
     # --- RAM Usage ---
 
-    if "ram" in command or "memory usage" in command:
+    if command in (
+    "ram usage",
+    "memory usage",
+    "memory status"
+):
 
         response = get_ram_usage()
 
@@ -321,6 +334,93 @@ def handle_command(command):
         filepath = take_screenshot()
         speak(filepath)
         print("SCREENSHOT PATH:", filepath)
+
+        return True
+    
+    # --- Process Manager ---
+
+    if any(
+    phrase in command
+    for phrase in (
+        "cpu hungry",
+        "cpu hungry apps",
+        "top processes",
+        "cpu usage by apps"
+    )
+):
+
+        processes = get_top_cpu_processes()
+
+        print("\nTop CPU Processes:\n")
+
+        for proc in processes:
+
+            print(
+                f"{proc['name']} "
+                f"({proc['cpu']}%)"
+            )
+
+        speak(
+            "Showing top CPU processes."
+        )
+
+        return True
+
+
+    # --- RAM Manager ---
+
+    if any(
+    phrase in command
+    for phrase in (
+        "ram hungry",
+        "ram hungry apps",
+        "memory hungry",
+        "memory hungry apps"
+    )
+):
+
+        processes = get_top_ram_processes()
+
+        print("\nTop RAM Processes:\n")
+
+        for proc in processes:
+
+            print(
+                f"{proc['name']} "
+                f"({proc['ram']}%)"
+            )
+
+        speak(
+            "Showing top memory consuming applications."
+        )
+
+        return True
+
+
+    # --- Kill Process ---
+
+    if command.startswith("kill "):
+
+        process_name = command.replace(
+            "kill ",
+            ""
+        ).strip()
+
+        success = kill_process(
+            process_name
+        )
+
+        if success:
+
+            speak(
+                f"{process_name} terminated."
+            )
+
+        else:
+
+            speak(
+                "Process not found."
+            )
 
         return True
     # --- File Search ---
