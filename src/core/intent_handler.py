@@ -28,6 +28,20 @@ from src.system.process_manager import (
     get_top_ram_processes,
     kill_process
 )
+from src.music.music_controller import (
+    open_spotify,
+    search_song,
+    play_music,
+    pause_music,
+    next_song,
+    previous_song
+)
+from src.system.power_manager import (
+    shutdown_pc,
+    restart_pc,
+    lock_pc,
+    sleep_pc
+)
 CHAT_MODE = False
 
 def handle_command(command):
@@ -423,6 +437,105 @@ def handle_command(command):
             )
 
         return True
+    
+    # --- Music Controls ---
+
+    if command == "open spotify":
+
+        speak(open_spotify())
+
+        return True
+    
+    # --- Spotify Search ---
+
+    if command.startswith("search spotify for "):
+
+        song = command.replace(
+        "search spotify for ",
+        "",
+        1
+    ).strip()
+
+        speak(
+        search_song(song)
+    )
+
+        return True
+
+    # --- Play Music ---
+
+    if command in ("play music", "play song", "play", "play the song","play it"):
+
+        speak(play_music())
+
+        return True
+
+
+    if command in ("pause music", "pause song", "pause", "pause the song","stop the song", "stop music","stop it"):
+
+        speak(pause_music())
+
+        return True
+
+
+    if command in ("next song", "skip song","skip","next","next one"):
+
+        speak(next_song())
+
+        return True
+
+
+    if command in ("previous song", "last song","previous","previous one"):
+
+        speak(previous_song())
+
+        return True
+    
+    # --- Power Commands ---
+
+    if command in (
+        "lock computer",
+        "lock pc",
+        "lock system"
+        "screen off"
+        "turn of screen"
+    ):
+
+        speak(lock_pc())
+
+        return True
+
+    if command in (
+        "shutdown computer",
+        "shutdown pc",
+        "turn off computer"
+        "turn the pc off"
+    ):
+
+        speak(shutdown_pc())
+
+        return True
+
+    if command in (
+        "restart computer",
+        "restart pc",
+        "reboot computer"
+    ):
+
+        speak(restart_pc())
+
+        return True
+
+    if command in (
+        "sleep computer",
+        "sleep pc"
+
+    ):
+
+        speak(sleep_pc())
+
+        return True
+
     # --- File Search ---
 
     if command.startswith(("find ", "search for ", "search ")):
@@ -450,6 +563,7 @@ def handle_command(command):
             speak("No matching files found")
 
         return True
+
     # --- Continuous Chat Mode ---
 
     if CHAT_MODE:
@@ -461,6 +575,8 @@ def handle_command(command):
         speak(response)
 
         return True
+
+
 
     # --- Ollama Brain (questions / unknown commands) ---
 
