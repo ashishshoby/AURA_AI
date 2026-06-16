@@ -36,6 +36,12 @@ from src.music.music_controller import (
     next_song,
     previous_song
 )
+from src.system.power_manager import (
+    shutdown_pc,
+    restart_pc,
+    lock_pc,
+    sleep_pc
+)
 CHAT_MODE = False
 
 def handle_command(command):
@@ -472,19 +478,64 @@ def handle_command(command):
         return True
 
 
-    if command in ("next song", "skip song","skip","next"):
+    if command in ("next song", "skip song","skip","next","next one"):
 
         speak(next_song())
 
         return True
 
 
-    if command in ("previous song", "last song","previous"):
+    if command in ("previous song", "last song","previous","previous one"):
 
         speak(previous_song())
 
         return True
     
+    # --- Power Commands ---
+
+    if command in (
+        "lock computer",
+        "lock pc",
+        "lock system"
+        "screen off"
+        "turn of screen"
+    ):
+
+        speak(lock_pc())
+
+        return True
+
+    if command in (
+        "shutdown computer",
+        "shutdown pc",
+        "turn off computer"
+        "turn the pc off"
+    ):
+
+        speak(shutdown_pc())
+
+        return True
+
+    if command in (
+        "restart computer",
+        "restart pc",
+        "reboot computer"
+    ):
+
+        speak(restart_pc())
+
+        return True
+
+    if command in (
+        "sleep computer",
+        "sleep pc"
+
+    ):
+
+        speak(sleep_pc())
+
+        return True
+
     # --- File Search ---
 
     if command.startswith(("find ", "search for ", "search ")):
@@ -512,6 +563,7 @@ def handle_command(command):
             speak("No matching files found")
 
         return True
+
     # --- Continuous Chat Mode ---
 
     if CHAT_MODE:
@@ -523,6 +575,8 @@ def handle_command(command):
         speak(response)
 
         return True
+
+
 
     # --- Ollama Brain (questions / unknown commands) ---
 
